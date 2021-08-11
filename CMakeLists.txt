@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.20)
+project(NeuralNetworks_CPP)
+set(CMAKE_CXX_STANDARD 23)
+add_library(NeuralNetworks_CPP NeuralNetworks/Neuron.h NeuralNetworks/Layer.h NeuralNetworks/Bias.h NeuralNetworks/Instance.h NeuralNetworks/ActivationFunctions/Activation.h NeuralNetworks/ActivationFunctions/ActivationFunction.h NeuralNetworks/ActivationFunctions/Sigmoid.h NeuralNetworks/InstanceList.h NeuralNetworks/ActivationFunctions/Linear.h NeuralNetworks/NeuralNetwork.h NeuralNetworks/ActivationFunctions/ReLU.h NeuralNetworks/ActivationFunctions/TanH.h)
+add_executable(Test Test/NeuralNetworkTest.cpp NeuralNetworks/Neuron.h NeuralNetworks/Layer.h NeuralNetworks/Bias.h NeuralNetworks/Instance.h NeuralNetworks/ActivationFunctions/Activation.h NeuralNetworks/ActivationFunctions/ActivationFunction.h NeuralNetworks/ActivationFunctions/Sigmoid.h NeuralNetworks/InstanceList.h NeuralNetworks/ActivationFunctions/Linear.h NeuralNetworks/NeuralNetwork.h NeuralNetworks/ActivationFunctions/ReLU.h NeuralNetworks/ActivationFunctions/TanH.h)

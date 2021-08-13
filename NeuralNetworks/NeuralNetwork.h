@@ -15,6 +15,8 @@
 #include "InstanceList.h"
 #include <utility>
 #include <vector>
+#include <cstdlib>
+#include <fstream>
 
 using namespace std;
 
@@ -35,17 +37,75 @@ private:
     void setWeights(vector<vector<vector<double>>> deltaWeights, vector<vector<vector<double>>> oldDeltaWeights, double momentum);
     vector<vector<double>> calculateError(int i, vector<vector<vector<double>>>& deltaWeights);
     vector<vector<double>> hadamardProduct(vector<vector<double>> matrix1, vector<vector<double>> matrix2);
+    static vector<string> split(const string& s, const string& regex);
 public:
     virtual ~NeuralNetwork();
     NeuralNetwork(int seed, vector<int>& hiddenLayers, InstanceList instanceList, Activation activation);
+    NeuralNetwork(const string& fileName, InstanceList instanceList);
     void train(int epoch, double learningRate, double etaDecrease, double momentum);
     string predict(Instance instance);
     double test(InstanceList list);
+    void save(const string& fileName);
 };
 
 NeuralNetwork::~NeuralNetwork() {
     delete[] layers;
     delete[] biases;
+}
+
+NeuralNetwork::NeuralNetwork(const string& fileName, InstanceList instanceList) {
+    fstream file;
+    file.open(fileName, ios::in);
+    if (file.fail()) {
+        cout << "file not reading" << endl;
+    } else {
+        string line;
+        this->instanceList = std::move(instanceList);
+        getline(file, line);
+        int layerSize = std::stoi(line);
+        this->layers = (Layer *)calloc(layerSize, sizeof(Layer));
+        this->layersLength = layerSize;
+        for (int i = 0; i < layersLength; i++) {
+            getline(file, line);
+            int neuronSize = std::stoi(line);
+            layers[i] = Layer(neuronSize);
+            for (int j = 0; j < neuronSize; j++) {
+                getline(file, line);
+                vector<string> neuron = split(line, " ");
+                layers[i].getNeuron(j).setValue(std::stod(neuron[0]));
+                if (neuron.size() > 1) {
+                    layers[i].getNeuron(j).initializeWeight(neuron.size() - 1);
+                    for (int k = 1; k < neuron.size(); k++) {
+                        layers[i].getNeuron(j).setWeight(k - 1, std::stod(neuron[k]));
+                    }
+                }
+            }
+        }
+        getline(file, line);
+        int biasSize = std::stoi(line);
+        biases = (Bias *)calloc(biasSize, sizeof(Bias));
+        for (int i = 0; i < biasSize; i++) {
+            getline(file, line);
+            vector<string> bias = split(line, " ");
+            biases[i] = Bias(bias.size());
+            for (int j = 0; j < bias.size(); j++) {
+                biases[i].setWeight(j, std::stod(bias[j]));
+            }
+        }
+        getline(file, line);
+        this->seed = std::stoi(line);
+        getline(file, line);
+        string activation = line;
+        if (activation == "SIGMOID") {
+            this->function = new Sigmoid();
+        } else if (activation == "RELU") {
+            this->function = new ReLU();
+        } else if (activation == "TANH") {
+            this->function = new TanH();
+        } else {
+            this->function = new Linear();
+        }
+    }
 }
 
 NeuralNetwork::NeuralNetwork(int seed, vector<int>& hiddenLayers, InstanceList instanceList, Activation activation) {
@@ -255,6 +315,50 @@ double NeuralNetwork::test(InstanceList list) {
         total++;
     }
     return correct * 100.00 / total;
+}
+
+void NeuralNetwork::save(const string& fileName) {
+    ofstream file;
+    file.open(fileName);
+    if(!file) {
+        cerr << "Error: file could not be opened" << endl;
+        exit(1);
+    } else {
+        file << layersLength << endl;
+        for (int i = 0; i < layersLength; i++) {
+            Layer layer = layers[i];
+            file << layer.getSize() << endl;
+            for (int j = 0; j < layer.getSize(); j++) {
+                file << layer.getNeuron(j).to_string() << endl;
+            }
+        }
+        file << layersLength - 1 << endl;
+        for (int i = 0; i < layersLength - 1; i++) {
+            Bias bias = biases[i];
+            file << bias.to_string() << endl;
+        }
+        file << this->seed << endl;
+        file << function->to_string() << endl;
+        file.close();
+    }
+}
+
+vector<string> NeuralNetwork::split(const string &s, const string &regex) {
+    vector<string> vec = vector<string>();
+    string current;
+    for (int i = 0; i < s.size(); i++) {
+        if (s.substr(i, regex.size()) == regex) {
+            vec.push_back(current);
+            current = "";
+            i += regex.size() - 1;
+        } else {
+            current += s.at(i);
+        }
+    }
+    if (!current.empty()) {
+        vec.push_back(current);
+    }
+    return vec;
 }
 
 #endif //NEURALNETWORKS_CPP_NEURALNETWORK_H
